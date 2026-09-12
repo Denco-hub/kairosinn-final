@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
@@ -83,25 +83,35 @@ function BookPage() {
     });
   }, []);
 
-  // Load rooms
+  // Load rooms (all active — picker and prices derived below, nothing hardcoded)
   useEffect(() => {
     supabase
       .from("rooms")
       .select("id, room_number, display_name, room_type, price_per_night, group_id")
       .eq("active", true)
-      .eq("room_type", type)
       .order("room_number")
       .then(({ data }) => {
         if (data) {
           setRooms(data as Room[]);
-          if (type === "family_suite" && data.length) {
-            setSelectedRoomId(data[0].id);
-          } else {
-            setSelectedRoomId("");
-          }
         }
       });
+  }, []);
+
+  // Reset the room picker when switching between Standard / Family Suite
+  useEffect(() => {
+    setSelectedRoomId("");
   }, [type]);
+
+  const standardRooms = useMemo(() => rooms.filter((r) => r.room_type === "standard"), [rooms]);
+  const familyRooms = useMemo(() => rooms.filter((r) => r.room_type === "family_suite"), [rooms]);
+
+  const standardPrice = standardRooms.length
+    ? Math.min(...standardRooms.map((r) => Number(r.price_per_night)))
+    : null;
+  const familyPrice = familyRooms.length
+    ? familyRooms.reduce((s, r) => s + Number(r.price_per_night), 0)
+    : null;
+  const familyNumbers = familyRooms.map((r) => r.room_number).join(" + ");
 
   // Availability for chosen dates (uses public RPC — no auth needed)
   useEffect(() => {
@@ -118,10 +128,7 @@ function BookPage() {
 
   const n = nights(checkIn, checkOut);
   const isFamily = type === "family_suite";
-  const familyRooms = isFamily ? rooms : [];
   const familyUnavailable = isFamily && familyRooms.some((r) => unavailableIds.has(r.id));
-  const pricePerNight = isFamily ? 110000 : 25000;
-  const total = pricePerNight * n;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,74 +149,33 @@ function BookPage() {
     }
 
     setSubmitting(true);
-    const { data: sess } = await supabase.auth.getSession();
-    const userId = sess.session?.user.id ?? null;
-    const groupId = crypto.randomUUID();
 
     try {
-      const bookingPayload = {
-          userId,
-          groupId,
-          guestName: guestName.trim(),
-          guestPhone: guestPhone.trim(),
-          guestEmail: guestEmail.trim() || null,
-          checkIn,
-          checkOut,
-          numGuests,
-          totalPrice: total,
-          notes: notes.trim() || null,
-          roomIds,
-      };
+      const { data: sess } = await supabase.auth.getSession();
+      const userId = sess.session?.user.id ?? null;
+      const groupId = crypto.randomUUID();
 
-      const { data: latestUnavailable } = await supabase.rpc("get_unavailable_room_ids", {
+      const { data: result, error } = await supabase.rpc("create_booking_atomic", {
+        _user_id: userId,
+        _group_id: groupId,
+        _guest_name: guestName.trim(),
+        _guest_phone: guestPhone.trim(),
+        _guest_email: guestEmail.trim() || null,
         _check_in: checkIn,
         _check_out: checkOut,
+        _num_guests: numGuests,
+        _notes: notes.trim() || null,
+        _room_ids: roomIds,
       });
 
-      const latestUnavailableSet = new Set(
-        (latestUnavailable ?? []).map((r: { room_id: string }) => r.room_id),
-      );
-
-      if (bookingPayload.roomIds.some((roomId) => latestUnavailableSet.has(roomId))) {
-        throw new Error("That room is no longer available for those dates.");
-      }
-
-      const { data: booking, error: bookingError } = await supabase
-        .from("bookings")
-        .insert({
-          user_id: bookingPayload.userId,
-          group_id: bookingPayload.groupId,
-          guest_name: bookingPayload.guestName,
-          guest_phone: bookingPayload.guestPhone,
-          guest_email: bookingPayload.guestEmail,
-          check_in: bookingPayload.checkIn,
-          check_out: bookingPayload.checkOut,
-          num_guests: bookingPayload.numGuests,
-          total_price: bookingPayload.totalPrice,
-          status: "pending",
-          notes: bookingPayload.notes,
-        })
-        .select("id")
-        .single();
-
-      if (bookingError || !booking) {
-        throw new Error(bookingError?.message || "Could not create booking.");
-      }
-
-      const { error: bookingRoomsError } = await supabase.from("booking_rooms").insert(
-        bookingPayload.roomIds.map((roomId) => ({
-          booking_id: booking.id,
-          room_id: roomId,
-        })),
-      );
-
-      if (bookingRoomsError) {
-        await supabase.from("bookings").delete().eq("id", booking.id);
-        throw new Error(bookingRoomsError.message);
-      }
+      if (error) throw error;
 
       setSubmitting(false);
-      toast.success("Booking request sent! Reception will call you shortly to confirm.");
+      toast.success(
+        `Booking request sent! Reception will call you shortly to confirm. Total: RWF ${Number(
+          result?.total_price,
+        ).toLocaleString()}`,
+      );
       navigate({ to: "/" });
     } catch (error) {
       setSubmitting(false);
@@ -233,14 +199,14 @@ function BookPage() {
               search={{ type: "standard" }}
               className={`rounded-full border px-3 py-1 ${type === "standard" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground"}`}
             >
-              Standard · RWF 25,000
+              Standard{standardPrice != null ? ` · RWF ${standardPrice.toLocaleString()}` : ""}
             </Link>
             <Link
               to="/book"
               search={{ type: "family_suite" }}
               className={`rounded-full border px-3 py-1 ${isFamily ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground"}`}
             >
-              Family Suite · RWF 110,000
+              Family Suite{familyPrice != null ? ` · RWF ${familyPrice.toLocaleString()}` : ""}
             </Link>
           </div>
         </div>
@@ -278,7 +244,7 @@ function BookPage() {
             <div className="md:col-span-2">
               <Label>Choose a room (for {n} night{n === 1 ? "" : "s"})</Label>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {rooms.map((r) => {
+                {standardRooms.map((r) => {
                   const taken = unavailableIds.has(r.id);
                   const active = selectedRoomId === r.id;
                   return (
@@ -303,7 +269,7 @@ function BookPage() {
                   );
                 })}
               </div>
-              {!rooms.length && (
+              {!standardRooms.length && (
                 <p className="mt-2 text-sm text-muted-foreground">No standard rooms found.</p>
               )}
             </div>
@@ -311,7 +277,7 @@ function BookPage() {
 
           {isFamily && (
             <div className="md:col-span-2 rounded-lg border border-border bg-muted/40 p-4 text-sm">
-              <p className="font-medium text-foreground">Family Suite (rooms 112A + 112B)</p>
+              <p className="font-medium text-foreground">Family Suite (rooms {familyNumbers || "—"})</p>
               <p className="mt-1 text-muted-foreground">
                 Both connected rooms are reserved together. Two beds, two private bathrooms.
               </p>
@@ -354,9 +320,7 @@ function BookPage() {
 
           <div className="md:col-span-2 flex flex-col-reverse items-stretch justify-between gap-4 border-t border-border pt-4 sm:flex-row sm:items-center">
             <p className="text-sm text-muted-foreground">
-              {n} night{n === 1 ? "" : "s"} ·{" "}
-              <span className="font-bold text-foreground">RWF {total.toLocaleString()}</span>{" "}
-              total
+              {n} night{n === 1 ? "" : "s"}
             </p>
             <Button type="submit" size="lg" disabled={submitting || n <= 0}>
               {submitting ? "Submitting..." : "Request booking"}

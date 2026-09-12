@@ -11,7 +11,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 md:grid-cols-3">
         {/* Brand Description Column */}
         <div className="space-y-4">
-          <div className="inline-block p-1 bg-[#fbf9f4] rounded-sm brightness-95">
+          <div className="inline-block rounded-none border border-[#af8f52]/40 bg-[#fbf9f4] p-1 brightness-95">
             <Logo />
           </div>
           <p className="max-w-xs font-serif text-sm italic text-[#fbf9f4]/70 leading-relaxed">

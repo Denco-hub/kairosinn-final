@@ -274,7 +274,9 @@ export type Database = {
           id: string
           payment_date: string
           payment_method: string
+          receipt_number: string
           recorded_by: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
         }
         Insert: {
@@ -285,7 +287,9 @@ export type Database = {
           id?: string
           payment_date?: string
           payment_method?: string
+          receipt_number?: string
           recorded_by: string
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
         }
         Update: {
@@ -296,7 +300,9 @@ export type Database = {
           id?: string
           payment_date?: string
           payment_method?: string
+          receipt_number?: string
           recorded_by?: string
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
         }
         Relationships: []
@@ -324,9 +330,83 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      daily_financial_summary: {
+        Row: {
+          day: string
+          total_payments: number
+          total_expenses: number
+          net_revenue: number
+          cash_take: number
+          mobile_money_take: number
+          payments_count: number
+          expenses_count: number
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      check_in_guest: {
+        Args: { _booking_id: string }
+        Returns: {
+          booking_id: string
+        }
+      }
+      check_out_guest: {
+        Args: { _booking_id: string }
+        Returns: {
+          booking_id: string
+        }
+      }
+      create_booking_atomic: {
+        Args: {
+          _user_id: string | null
+          _group_id: string
+          _guest_name: string
+          _guest_phone: string
+          _guest_email: string | null
+          _check_in: string
+          _check_out: string
+          _num_guests: number
+          _notes: string | null
+          _room_ids: string[]
+        }
+        Returns: {
+          booking_id: string
+          total_price: number
+          nights: number
+        }
+      }
+      create_walkin_booking: {
+        Args: {
+          _guest_name: string
+          _guest_phone: string
+          _guest_email: string | null
+          _notes: string | null
+          _check_in: string
+          _check_out: string
+          _room_ids: string[]
+          _amount: number
+          _payment_method: string
+          _auto_check_in: boolean
+        }
+        Returns: {
+          booking_id: string
+        }
+      }
+      get_room_rack_status: {
+        Args: Record<string, never>
+        Returns: {
+          room_id: string
+          room_number: string
+          display_name: string | null
+          room_type: string | null
+          status: "vacant" | "occupied" | "arriving_today" | "maintenance"
+          booking_id: string | null
+          guest_name: string | null
+          arrives_at: string | null
+          departs_at: string | null
+        }[]
+      }
       get_unavailable_room_ids: {
         Args: { _check_in: string; _check_out: string }
         Returns: {
@@ -342,9 +422,9 @@ export type Database = {
       }
       is_owner_or_manager: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
-      redeem_role_passkey: {
+      claim_staff_passkey: {
         Args: { _passkey: string }
-        Returns: Database["public"]["Enums"]["app_role"]
+        Returns: { role: string }
       }
     }
     Enums: {
@@ -355,8 +435,15 @@ export type Database = {
         | "owner"
         | "accountant"
         | "receptionist"
-      booking_status: "pending" | "confirmed" | "cancelled" | "completed"
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "cancelled"
+        | "completed"
+        | "checked_in"
+        | "checked_out"
       room_type: "standard" | "family_suite"
+      transaction_type: "payment" | "expense" | "refund"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -492,8 +579,16 @@ export const Constants = {
         "accountant",
         "receptionist",
       ],
-      booking_status: ["pending", "confirmed", "cancelled", "completed"],
+      booking_status: [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "completed",
+        "checked_in",
+        "checked_out",
+      ],
       room_type: ["standard", "family_suite"],
+      transaction_type: ["payment", "expense", "refund"],
     },
   },
 } as const

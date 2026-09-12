@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/messages")({
@@ -82,6 +83,7 @@ function MessagesPage() {
           .from("messages")
           .select("*")
           .eq("guest_session_id", sessionId)
+          .setHeader("x-guest-session", sessionId)
           .order("created_at", { ascending: true });
         setThread((data as Msg[]) ?? []);
       }
@@ -122,7 +124,7 @@ function MessagesPage() {
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
-    const payload = me
+    const payload: TablesInsert<"messages"> = me
       ? {
           body: body.trim(),
           sender_id: me,
@@ -134,7 +136,10 @@ function MessagesPage() {
           guest_name: name.trim(),
           guest_phone: phone.trim(),
         };
-    const { error } = await supabase.from("messages").insert(payload);
+    const builder = supabase.from("messages").insert(payload);
+    const { error } = me
+      ? await builder
+      : await builder.setHeader("x-guest-session", sessionId);
     if (error) return toast.error(error.message);
     setBody("");
   };

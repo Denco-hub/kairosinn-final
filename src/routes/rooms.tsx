@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
+import { ImageWithSkeleton } from "@/components/ui/ImageWithSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Wifi, Bath, BedDouble, Fan, Coffee, Briefcase } from "lucide-react";
 import roomStandard from "@/assets/room-standard.jpg";
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/rooms")({
       {
         name: "description",
         content:
-          "Standard rooms at RWF 25,000/night and a Family Suite at RWF 110,000/night at Kairos Inn, Karangazi. WiFi, breakfast, private bath included.",
+          "Browse our rooms and rates at Kairos Inn, Karangazi. WiFi, breakfast, private bath included in every room.",
       },
       { property: "og:title", content: "Rooms & Rates — Kairos Inn" },
       {
@@ -26,56 +27,43 @@ export const Route = createFileRoute("/rooms")({
   component: RoomsPage,
 });
 
-type RoomCard = {
-  key: string;
-  title: string;
-  price: number;
-  description: string;
-  image: string;
-  bookHref: string;
+type PublicRoom = {
+  id: string;
+  room_number: string;
+  display_name: string;
+  room_type: "standard" | "family_suite";
+  price_per_night: number;
+  description: string | null;
+  image_url: string | null;
 };
 
+const FALLBACK_BODY =
+  "A thoughtfully provisioned room at Kairos Inn, Karangazi — natural cooling, private bath, and a fresh breakfast served daily.";
+
+const roomTypeLabel = (t: PublicRoom["room_type"]) =>
+  t === "family_suite" ? "Family Suite" : "Standard Room";
+
 function RoomsPage() {
-  const [available, setAvailable] = useState<{ standard: number; family: boolean } | null>(null);
-  
-  const fetchRoomsCount = () => {
-    supabase
-      .from("rooms")
-      .select("room_type")
-      .eq("active", true)
-      .then(({ data }) => {
-        if (!data) return;
-        setAvailable({
-          standard: data.filter((r) => r.room_type === "standard").length,
-          family: data.filter((r) => r.room_type === "family_suite").length >= 2,
-        });
-      });
-  };
+  const [rooms, setRooms] = useState<PublicRoom[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRoomsCount();
+    supabase
+      .from("rooms")
+      .select("*")
+      .eq("active", true)
+      .order("room_number")
+      .then(({ data }) => {
+        setRooms((data as PublicRoom[] | null) ?? []);
+        setLoading(false);
+      });
   }, []);
 
-  const cards: RoomCard[] = [
-    {
-      key: "standard",
-      title: "Standard Room",
-      price: 25000,
-      description:
-        "A carefully designed single sanctuary featuring natural cooling, private stone bath, custom wood work desk, dedicated wardrobe, and high-speed connection. Complete with a traditional fresh breakfast served daily.",
-      image: roomStandard,
-      bookHref: "/book?type=standard",
-    },
-    {
-      key: "family",
-      title: "Family Suite (112A + 112B)",
-      price: 110000,
-      description:
-        "Two interconnected private structural quarters reserved together. Outfitted with premium dual bedding and twin individual private baths. Masterfully arranged for families or traveling companions.",
-      image: roomFamily,
-      bookHref: "/book?type=family_suite",
-    },
-  ];
+  const standardCount = rooms.filter((r) => r.room_type === "standard").length;
+  const familyCount = rooms.filter((r) => r.room_type === "family_suite").length;
+
+  const fallbackImage = (room_type: PublicRoom["room_type"]) =>
+    room_type === "family_suite" ? roomFamily : roomStandard;
 
   const amenities = [Wifi, Fan, Bath, BedDouble, Briefcase, Coffee];
   const amenityLabels = ["WiFi", "Cooling Fan", "Private Bath", "Plush Bed", "Work Desk", "Breakfast"];
@@ -102,83 +90,101 @@ function RoomsPage() {
 
         {/* --- ROOMS LIST --- */}
         <section className="mx-auto max-w-6xl px-6 py-16">
-          <div className="grid gap-12 md:grid-cols-2">
-            {cards.map((c) => (
-              <article
-                key={c.key}
-                className="overflow-hidden rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] transition-all duration-300 hover:border-[#af8f52] hover:shadow-md flex flex-col"
-              >
-                {/* Image Container with Price Badge */}
-                <div className="relative overflow-hidden group">
-                  <img
-                    src={c.image}
-                    alt={c.title}
-                    loading="lazy"
-                    width={1280}
-                    height={896}
-                    className="h-72 w-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-[0.95]"
-                  />
-                  <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute top-4 right-4 bg-[#2c2520] border border-[#af8f52] px-4 py-2 text-center shadow-md">
-                    <span className="font-serif text-sm font-semibold text-[#e0cfb3] tracking-wider block">
-                      RWF {c.price.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] uppercase tracking-widest text-[#fbf9f4]/60 block mt-0.5">
-                      per night
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content Details */}
-                <div className="p-8 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h2 className="font-serif text-2xl font-normal text-[#2c2520] mb-3">
-                      {c.title}
-                    </h2>
-                    <p className="font-serif text-sm italic text-muted-foreground leading-relaxed mb-6">
-                      {c.description}
-                    </p>
-
-                    {/* Classic Architectural Grid Amenities */}
-                    <div className="border-t border-b border-[#af8f52]/10 py-4 my-6">
-                      <span className="text-[10px] font-bold tracking-[0.2em] text-[#af8f52] block mb-3 uppercase">Suite Provisions:</span>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                        {amenities.map((Icon, i) => (
-                          <div key={i} className="flex items-center gap-2.5 text-[#2c2520]/80">
-                            <Icon className="h-4 w-4 text-[#af8f52]/80 shrink-0" />
-                            <span className="font-serif text-xs font-medium tracking-wide">
-                              {amenityLabels[i]}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+          {loading ? (
+            <p className="font-serif text-sm italic text-muted-foreground">Loading rooms...</p>
+          ) : rooms.length === 0 ? (
+            <p className="font-serif text-sm italic text-muted-foreground">
+              No rooms available right now — please call reception.
+            </p>
+          ) : (
+            <div className="grid gap-12 md:grid-cols-2">
+              {rooms.map((r) => (
+                <article
+                  key={r.id}
+                  className="overflow-hidden rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] transition-all duration-300 hover:border-[#af8f52] hover:shadow-md flex flex-col"
+                >
+                  {/* Image Container with Price Badge */}
+                  <div className="relative overflow-hidden group">
+                    <ImageWithSkeleton
+                      src={r.image_url || fallbackImage(r.room_type)}
+                      alt={r.display_name}
+                      fallbackSrc={fallbackImage(r.room_type)}
+                      className="h-72 w-full transition-transform duration-700 group-hover:scale-105 filter brightness-[0.95]"
+                    />
+                    <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute top-4 right-4 bg-[#2c2520] border border-[#af8f52] px-4 py-2 text-center shadow-md">
+                      <span className="font-serif text-sm font-semibold text-[#e0cfb3] tracking-wider block">
+                        RWF {Number(r.price_per_night).toLocaleString()}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-[#fbf9f4]/60 block mt-0.5">
+                        per night
+                      </span>
                     </div>
                   </div>
 
-                  {/* Footnote & Action Button */}
-                  <div>
-                    {c.key === "standard" && available && (
-                      <div className="flex items-center gap-2 mb-4 bg-[#faf6ee] border border-[#af8f52]/10 p-2.5 text-center justify-center">
-                        <span className="text-[#af8f52] text-[9px]">◆</span>
-                        <p className="font-serif text-xs italic text-[#af8f52]">
-                          {available.standard} structural standard rooms currently active (Suites 101–111)
-                        </p>
-                        <span className="text-[#af8f52] text-[9px]">◆</span>
-                      </div>
-                    )}
+                  {/* Content Details */}
+                  <div className="p-8 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h2 className="font-serif text-2xl font-normal text-[#2c2520] mb-3">
+                        {r.display_name}
+                      </h2>
+                      <p className="text-[10px] font-bold tracking-[0.2em] text-[#af8f52] block mb-3 uppercase">
+                        Room {r.room_number} · {roomTypeLabel(r.room_type)}
+                      </p>
+                      <p className="font-serif text-sm italic text-muted-foreground leading-relaxed mb-6">
+                        {r.description || FALLBACK_BODY}
+                      </p>
 
-                    <div className="mt-4">
-                      <Link to={c.bookHref}>
-                        <Button className="w-full bg-gradient-to-b from-[#c5a86a] to-[#af8f52] text-[#fbf9f4] font-serif tracking-widest rounded-none py-6 border border-[#af8f52] hover:brightness-110 transition-all shadow-sm">
-                          ARRANGE RESERVATION
-                        </Button>
-                      </Link>
+                      {/* Classic Architectural Grid Amenities */}
+                      <div className="border-t border-b border-[#af8f52]/10 py-4 my-6">
+                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#af8f52] block mb-3 uppercase">Suite Provisions:</span>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                          {amenities.map((Icon, i) => (
+                            <div key={i} className="flex items-center gap-2.5 text-[#2c2520]/80">
+                              <Icon className="h-4 w-4 text-[#af8f52]/80 shrink-0" />
+                              <span className="font-serif text-xs font-medium tracking-wide">
+                                {amenityLabels[i]}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footnote & Action Button */}
+                    <div>
+                      {r.room_type === "standard" && standardCount > 0 && (
+                        <div className="flex items-center gap-2 mb-4 bg-[#faf6ee] border border-[#af8f52]/10 p-2.5 text-center justify-center">
+                          <span className="text-[#af8f52] text-[9px]">◆</span>
+                          <p className="font-serif text-xs italic text-[#af8f52]">
+                            One of {standardCount} active standard rooms
+                          </p>
+                          <span className="text-[#af8f52] text-[9px]">◆</span>
+                        </div>
+                      )}
+                      {r.room_type === "family_suite" && familyCount > 0 && (
+                        <div className="flex items-center gap-2 mb-4 bg-[#faf6ee] border border-[#af8f52]/10 p-2.5 text-center justify-center">
+                          <span className="text-[#af8f52] text-[9px]">◆</span>
+                          <p className="font-serif text-xs italic text-[#af8f52]">
+                            Family Suite — {familyCount} connected room{familyCount === 1 ? "" : "s"} reserved together
+                          </p>
+                          <span className="text-[#af8f52] text-[9px]">◆</span>
+                        </div>
+                      )}
+
+                      <div className="mt-4">
+                        <Link to="/book" search={{ type: r.room_type }}>
+                          <Button className="w-full bg-gradient-to-b from-[#c5a86a] to-[#af8f52] text-[#fbf9f4] font-serif tracking-widest rounded-none py-6 border border-[#af8f52] hover:brightness-110 transition-all shadow-sm">
+                            ARRANGE RESERVATION
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
       </div>

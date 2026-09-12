@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
+import { ImageWithSkeleton } from "@/components/ui/ImageWithSkeleton";
 import { Wifi, BedDouble, Bath, Coffee, Fan, Briefcase, MapPin, Star } from "lucide-react";
 import hero from "@/assets/hero-motel.jpg";
 import roomStandard from "@/assets/room-standard.jpg";
@@ -44,13 +45,13 @@ function HomePage() {
         
         {/* --- HERO SECTION --- */}
         <section className="relative isolate overflow-hidden border-b border-[#af8f52]/20">
-          <img
-            src={hero}
-            alt="Kairos Inn motel exterior at golden hour"
-            width={1920}
-            height={1088}
-            className="absolute inset-0 -z-10 h-full w-full object-cover filter brightness-[0.7] sepia-[0.15]"
-          />
+          <div className="absolute inset-0 -z-10">
+            <ImageWithSkeleton
+              src={hero}
+              alt="Kairos Inn motel exterior at golden hour"
+              className="h-full w-full filter brightness-[0.7] sepia-[0.15]"
+            />
+          </div>
           {/* Elegant overlay gradient evoking aging parchment shadows */}
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/60 via-black/40 to-[#2c2520]/80" />
           
@@ -136,11 +137,10 @@ function HomePage() {
               {/* Standard Room Card */}
               <div className="overflow-hidden rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] shadow-sm transition-all hover:shadow-md flex flex-col">
                 <div className="relative overflow-hidden">
-                  <img
+                  <ImageWithSkeleton
                     src={roomStandard}
                     alt="Standard room at Kairos Inn"
-                    loading="lazy"
-                    className="h-64 w-full object-cover transition-transform duration-500 hover:scale-105"
+                    className="h-64 w-full transition-transform duration-500 hover:scale-105"
                   />
                   <div className="absolute top-4 right-4 bg-[#2c2520] border border-[#af8f52] px-3 py-1 text-center">
                     <span className="font-serif text-xs text-[#e0cfb3] tracking-wide block">RWF 25,000</span>
@@ -159,11 +159,10 @@ function HomePage() {
               {/* Family Suite Card */}
               <div className="overflow-hidden rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] shadow-sm transition-all hover:shadow-md flex flex-col">
                 <div className="relative overflow-hidden">
-                  <img
+                  <ImageWithSkeleton
                     src={roomFamily}
                     alt="Family Suite at Kairos Inn"
-                    loading="lazy"
-                    className="h-64 w-full object-cover transition-transform duration-500 hover:scale-105"
+                    className="h-64 w-full transition-transform duration-500 hover:scale-105"
                   />
                   <div className="absolute top-4 right-4 bg-[#2c2520] border border-[#af8f52] px-3 py-1 text-center">
                     <span className="font-serif text-xs text-[#e0cfb3] tracking-wide block">RWF 110,000</span>
