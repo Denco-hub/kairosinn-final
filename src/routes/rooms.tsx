@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ImageWithSkeleton } from "@/components/ui/ImageWithSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Wifi, Bath, BedDouble, Fan, Coffee, Briefcase } from "lucide-react";
-import roomStandard from "@/assets/room-standard.jpg";
-import roomFamily from "@/assets/room-family.jpg";
+import roomPhoto from "@/assets/room.jpg";
+import singleRoomPhoto from "@/assets/single-room.jpg";
 
 export const Route = createFileRoute("/rooms")({
   head: () => ({
@@ -41,15 +41,16 @@ type PublicRoom = {
 };
 
 const FALLBACK_BODY =
-  "A thoughtfully provisioned room at Kairos Inn, Karangazi — natural cooling, private bath, and a fresh breakfast served daily.";
+  "A thoughtfully provisioned room at Kairos Inn, Karangazi — natural cooling, private bath, and a fresh morning breakfast served daily.";
 
-const ROOM_TYPE_ORDER: RoomType[] = ["king_bed", "double", "twin", "large_double"];
+// Display from most expensive to least expensive.
+const ROOM_TYPE_ORDER: RoomType[] = ["king_bed", "large_double", "double", "twin"];
 
 const fallbackImages: Record<RoomType, string> = {
-  king_bed: roomFamily,
-  double: roomStandard,
-  twin: roomStandard,
-  large_double: roomFamily,
+  king_bed: roomPhoto,
+  large_double: roomPhoto,
+  double: singleRoomPhoto,
+  twin: singleRoomPhoto,
 };
 
 function RoomsPage() {
@@ -61,7 +62,6 @@ function RoomsPage() {
       .from("rooms")
       .select("id, room_number, room_type, display_name, description, price_per_night, image_url, active, available_count")
       .eq("active", true)
-      .order("room_type")
       .then(({ data }) => {
         setRooms((data as PublicRoom[] | null) ?? []);
         setLoading(false);
