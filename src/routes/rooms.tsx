@@ -43,7 +43,6 @@ type PublicRoom = {
 const FALLBACK_BODY =
   "A thoughtfully provisioned room at Kairos Inn, Karangazi — natural cooling, private bath, and a fresh morning breakfast served daily.";
 
-// Display from most expensive to least expensive.
 const ROOM_TYPE_ORDER: RoomType[] = ["king_bed", "large_double", "double", "twin"];
 
 const fallbackImages: Record<RoomType, string> = {
@@ -116,9 +115,10 @@ function RoomsPage() {
                       src={r.image_url || fallbackImages[r.room_type]}
                       alt={r.display_name}
                       fallbackSrc={fallbackImages[r.room_type]}
-                      className="h-72 w-full transition-transform duration-700 group-hover:scale-105 filter brightness-[0.95]"
+                      objectFit="contain"
+                      className="h-72 w-full bg-[#faf6ee] transition-transform duration-700 group-hover:scale-[1.02]"
                     />
-                    <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
                     <div className="absolute top-4 right-4 bg-[#2c2520] border border-[#af8f52] px-4 py-2 text-center shadow-md">
                       <span className="font-serif text-sm font-semibold text-[#e0cfb3] tracking-wider block">
                         RWF {Number(r.price_per_night).toLocaleString()}
