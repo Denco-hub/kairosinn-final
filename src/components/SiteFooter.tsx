@@ -33,14 +33,14 @@ export function SiteFooter() {
             </li>
             <li className="flex items-center gap-3">
               <Phone className="h-4 w-4 text-[#af8f52]" />
-              <a href="tel:+250793081660" className="text-xs transition-colors hover:text-[#e0cfb3]">
-                +250 793 081 660
+              <a href="tel:+250791271095" className="text-xs transition-colors hover:text-[#e0cfb3]">
+                +250 791 271 095
               </a>
             </li>
             <li className="flex items-center gap-3">
               <Mail className="h-4 w-4 text-[#af8f52]" />
-              <a href="mailto:hello@kairosinn.rw" className="text-xs transition-colors hover:text-[#e0cfb3] break-all">
-                hello@kairosinn.rw
+              <a href="mailto:admin@kairosinn.com" className="text-xs transition-colors hover:text-[#e0cfb3] break-all">
+                admin@kairosinn.com
               </a>
             </li>
           </ul>
@@ -85,7 +85,7 @@ export function SiteFooter() {
           <span className="flex items-center gap-1.5">
             ARCHITECTED BY 
             <a
-              href="https://wa.me/250793081660"
+              href="https://wa.me/250791271095"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-[#e0cfb3] transition-colors hover:text-[#af8f52] hover:underline"
