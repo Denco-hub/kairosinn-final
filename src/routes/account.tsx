@@ -152,6 +152,16 @@ function AccountPage() {
       .slice(0, 2)
       .toUpperCase() || "G";
 
+  const dashboardHref = role === "owner" ? "/owner" : "/staff";
+  const dashboardTitle =
+    role === "owner" ? "Owner Dashboard" : role === "manager" ? "Manager Dashboard" : "Staff Dashboard";
+  const dashboardDescription =
+    role === "owner"
+      ? "Oversee Kairos Inn operations, staff, finances, rooms, and management activity."
+      : role === "manager"
+        ? "Manage day-to-day operations, bookings, rooms, staff, and transactions."
+        : "Access your assigned Kairos Inn operations.";
+
   return (
     <SiteLayout>
       <div className="min-h-[70vh] bg-[#faf8f5] text-stone-800">
@@ -194,47 +204,18 @@ function AccountPage() {
 
               <form onSubmit={handleSaveProfile} className="mt-6 space-y-5">
                 <div>
-                  <label htmlFor="full-name" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">
-                    Full name
-                  </label>
-                  <Input
-                    id="full-name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="rounded-none border-stone-300 bg-white text-stone-900"
-                    placeholder="Your full name"
-                    autoComplete="name"
-                    required
-                  />
+                  <label htmlFor="full-name" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">Full name</label>
+                  <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} className="rounded-none border-stone-300 bg-white text-stone-900" placeholder="Your full name" autoComplete="name" required />
                 </div>
-
                 <div>
-                  <label htmlFor="phone" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">
-                    Phone
-                  </label>
-                  <Input
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="rounded-none border-stone-300 bg-white text-stone-900"
-                    placeholder="Phone number"
-                    autoComplete="tel"
-                  />
+                  <label htmlFor="phone" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">Phone</label>
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-none border-stone-300 bg-white text-stone-900" placeholder="Phone number" autoComplete="tel" />
                 </div>
-
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    value={email}
-                    readOnly
-                    className="rounded-none border-stone-200 bg-stone-50 text-stone-500"
-                  />
+                  <label htmlFor="email" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">Email</label>
+                  <Input id="email" value={email} readOnly className="rounded-none border-stone-200 bg-stone-50 text-stone-500" />
                   <p className="mt-1 text-xs text-stone-400">Your login email is managed by your account authentication.</p>
                 </div>
-
                 <div className="flex items-center justify-between gap-4 border-t border-stone-100 pt-5">
                   <div>
                     <p className="text-[10px] uppercase tracking-widest text-stone-500">Role</p>
@@ -250,29 +231,16 @@ function AccountPage() {
 
             <div className="space-y-6">
               {role && role !== "guest" && (
-                <Link
-                  to="/staff"
-                  className="block border border-[#b85a2c]/50 bg-white p-6 transition hover:border-[#b85a2c]"
-                >
+                <Link to={dashboardHref} className="block border border-[#b85a2c]/50 bg-white p-6 transition hover:border-[#b85a2c]">
                   <p className="text-[10px] uppercase tracking-widest text-[#b85a2c]">{role} access</p>
-                  <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-stone-900">
-                    {role === "owner" ? "Owner Dashboard" : role === "manager" ? "Manager Dashboard" : "Staff Dashboard"} →
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-stone-600">
-                    {role === "owner"
-                      ? "Oversee Kairos Inn operations, staff, finances, rooms, and management activity."
-                      : role === "manager"
-                        ? "Manage day-to-day operations, bookings, rooms, staff, and transactions."
-                        : "Access your assigned Kairos Inn operations."}
-                  </p>
+                  <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-stone-900">{dashboardTitle} →</h2>
+                  <p className="mt-2 text-sm leading-6 text-stone-600">{dashboardDescription}</p>
                 </Link>
               )}
 
               <div className="border border-stone-200 bg-white p-6">
                 <p className="text-[10px] uppercase tracking-widest text-stone-500">Account ID</p>
-                <p className={`${MONO_FIGURE} mt-2 break-all text-stone-800`}>
-                  KI-{(profile?.id ?? "GUEST").slice(0, 12).toUpperCase()}
-                </p>
+                <p className={`${MONO_FIGURE} mt-2 break-all text-stone-800`}>KI-{(profile?.id ?? "GUEST").slice(0, 12).toUpperCase()}</p>
               </div>
             </div>
           </div>
@@ -287,28 +255,15 @@ function AccountPage() {
               <form onSubmit={handleClaim} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
                 <div>
                   <label htmlFor="passkey" className="mb-1.5 block text-[10px] uppercase tracking-widest text-stone-600">Staff Passkey</label>
-                  <Input
-                    id="passkey"
-                    value={passkeyInput}
-                    onChange={(e) => setPasskeyInput(e.target.value)}
-                    placeholder="Enter passkey"
-                    className={`${MONO_FIGURE} rounded-none border-stone-300 bg-white tracking-widest text-stone-900 placeholder:normal-case`}
-                    required
-                  />
+                  <Input id="passkey" value={passkeyInput} onChange={(e) => setPasskeyInput(e.target.value)} placeholder="Enter passkey" className={`${MONO_FIGURE} rounded-none border-stone-300 bg-white tracking-widest text-stone-900 placeholder:normal-case`} required />
                 </div>
-                <Button type="submit" disabled={claiming} className={BUTTON_PRIMARY}>
-                  {claiming ? "Claiming..." : "Claim"}
-                </Button>
+                <Button type="submit" disabled={claiming} className={BUTTON_PRIMARY}>{claiming ? "Claiming..." : "Claim"}</Button>
               </form>
             </div>
           )}
 
           <div className="mt-8">
-            <Button
-              variant="outline"
-              onClick={handleSignOut}
-              className="rounded-none border-stone-300 bg-transparent text-xs font-medium uppercase tracking-wider text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-            >
+            <Button variant="outline" onClick={handleSignOut} className="rounded-none border-stone-300 bg-transparent text-xs font-medium uppercase tracking-wider text-stone-600 hover:bg-stone-100 hover:text-stone-900">
               <LogOut className="mr-1 h-4 w-4" /> Sign out
             </Button>
           </div>
