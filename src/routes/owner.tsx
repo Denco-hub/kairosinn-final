@@ -4,9 +4,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import {
-  ArrowLeft,
   BarChart3,
   BedDouble,
   CalendarCheck,
@@ -59,8 +57,15 @@ type Activity = {
 };
 
 const money = (value: number) => `RWF ${value.toLocaleString()}`;
-
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || "Owner";
+
+const METRIC_CARDS = [
+  ["Net ledger", BarChart3],
+  ["Occupied", BedDouble],
+  ["Pending", Clock3],
+  ["Arrivals", CalendarCheck],
+  ["Departures", CalendarCheck],
+] as const;
 
 function OwnerPage() {
   const navigate = useNavigate();
@@ -130,17 +135,11 @@ function OwnerPage() {
         .select("id,full_name")
         .in("id", ids);
       const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name ?? "Unnamed"]));
-      const emailMap = new Map<string, string>();
-      for (const id of ids) {
-        if (id === session.user.id) continue;
-        // Email addresses are intentionally not read from auth; the owner sees names only here.
-        emailMap.set(id, "Private account");
-      }
       setManagers(
         managerRows.map((row) => ({
           user_id: row.user_id,
           name: profileMap.get(row.user_id) ?? "Unnamed manager",
-          email: emailMap.get(row.user_id) ?? "Private account",
+          email: "Private account",
         })),
       );
     } else {
@@ -179,6 +178,14 @@ function OwnerPage() {
     return { revenue, occupied, pending, arrivals, departures };
   }, [bookings, transactions]);
 
+  const metricValues = [
+    money(metrics.revenue),
+    `${metrics.occupied} / ${rooms.length}`,
+    String(metrics.pending),
+    String(metrics.arrivals),
+    String(metrics.departures),
+  ] as const;
+
   if (loading) {
     return (
       <SiteLayout>
@@ -214,9 +221,7 @@ function OwnerPage() {
                 <p className="mt-1 text-sm text-stone-500">Owner operations, finances, staffing, and management oversight.</p>
               </div>
               <Link to="/account">
-                <Button variant="outline" className="rounded-none border-stone-300 bg-white uppercase tracking-wider text-xs">
-                  My Account
-                </Button>
+                <Button variant="outline" className="rounded-none border-stone-300 bg-white uppercase tracking-wider text-xs">My Account</Button>
               </Link>
             </div>
           </div>
@@ -224,17 +229,11 @@ function OwnerPage() {
 
         <main className="mx-auto max-w-6xl px-4 py-7 sm:py-9">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {[
-              ["Net ledger", money(metrics.revenue), BarChart3],
-              ["Occupied", `${metrics.occupied} / ${rooms.length}`, BedDouble],
-              ["Pending", String(metrics.pending), Clock3],
-              ["Arrivals", String(metrics.arrivals), CalendarCheck],
-              ["Departures", String(metrics.departures), CalendarCheck],
-            ].map(([label, value, Icon]) => (
-              <div key={String(label)} className="border border-stone-200 bg-white p-5">
+            {METRIC_CARDS.map(([label, Icon], index) => (
+              <div key={label} className="border border-stone-200 bg-white p-5">
                 <Icon className="h-4 w-4 text-[#b85a2c]" />
                 <p className="mt-4 text-[10px] uppercase tracking-widest text-stone-500">{label}</p>
-                <p className="mt-1 font-mono text-lg font-semibold text-stone-900">{value}</p>
+                <p className="mt-1 font-mono text-lg font-semibold text-stone-900">{metricValues[index]}</p>
               </div>
             ))}
           </div>
@@ -248,7 +247,6 @@ function OwnerPage() {
                 </div>
                 <Users className="h-5 w-5 text-[#b85a2c]" />
               </div>
-
               <div className="mt-5 space-y-3">
                 {managers.length === 0 ? (
                   <p className="text-sm text-stone-500">No manager role is currently assigned.</p>
@@ -289,9 +287,7 @@ function OwnerPage() {
                 <p className="text-[10px] uppercase tracking-widest text-[#b85a2c]">Audit trail</p>
                 <h2 className="mt-1 font-serif text-2xl font-bold text-stone-900">Manager Activity</h2>
               </div>
-              <Link to="/staff">
-                <Button variant="outline" className="rounded-none border-stone-300 bg-white uppercase tracking-wider text-xs">Operations</Button>
-              </Link>
+              <Link to="/staff"><Button variant="outline" className="rounded-none border-stone-300 bg-white uppercase tracking-wider text-xs">Operations</Button></Link>
             </div>
 
             {!activityAvailable ? (
@@ -308,9 +304,7 @@ function OwnerPage() {
                     <p className="font-mono text-xs text-stone-500">{new Date(item.created_at).toLocaleString()}</p>
                     <div>
                       <p className="font-medium text-stone-900">{item.description || item.action}</p>
-                      <p className="mt-1 text-xs uppercase tracking-wider text-stone-500">
-                        {item.entity_type || "system"} · {item.action}
-                      </p>
+                      <p className="mt-1 text-xs uppercase tracking-wider text-stone-500">{item.entity_type || "system"} · {item.action}</p>
                     </div>
                   </div>
                 ))}
