@@ -9,8 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const ROOM_TYPES = ["king_bed", "double", "twin", "large_double"] as const;
+type RoomType = (typeof ROOM_TYPES)[number];
+
 const searchSchema = z.object({
-  type: z.enum(["standard", "family_suite"]).optional(),
+  type: z.enum(ROOM_TYPES).optional(),
 });
 
 export const Route = createFileRoute("/book")({
@@ -32,9 +35,16 @@ type Room = {
   id: string;
   room_number: string;
   display_name: string;
-  room_type: "standard" | "family_suite";
+  room_type: RoomType;
   price_per_night: number;
   group_id: string | null;
+};
+
+const ROOM_LABELS: Record<RoomType, string> = {
+  king_bed: "King Bed Room",
+  double: "Double Room",
+  twin: "Twin Bed Room",
+  large_double: "Large Double Room",
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -51,7 +61,7 @@ function nights(checkIn: string, checkOut: string) {
 }
 
 function BookPage() {
-  const { type = "standard" } = useSearch({ from: "/book" });
+  const { type = "king_bed" } = useSearch({ from: "/book" });
   const navigate = useNavigate();
 
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -66,7 +76,6 @@ function BookPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Prefill from existing session if signed in (optional)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) return;
@@ -83,37 +92,30 @@ function BookPage() {
     });
   }, []);
 
-  // Load rooms (all active — picker and prices derived below, nothing hardcoded)
   useEffect(() => {
     supabase
       .from("rooms")
       .select("id, room_number, display_name, room_type, price_per_night, group_id")
       .eq("active", true)
-      .order("room_number")
+      .order("room_type")
       .then(({ data }) => {
-        if (data) {
-          setRooms(data as Room[]);
-        }
+        if (data) setRooms(data as Room[]);
       });
   }, []);
 
-  // Reset the room picker when switching between Standard / Family Suite
   useEffect(() => {
     setSelectedRoomId("");
   }, [type]);
 
-  const standardRooms = useMemo(() => rooms.filter((r) => r.room_type === "standard"), [rooms]);
-  const familyRooms = useMemo(() => rooms.filter((r) => r.room_type === "family_suite"), [rooms]);
+  const selectedTypeRooms = useMemo(
+    () => rooms.filter((r) => r.room_type === type),
+    [rooms, type],
+  );
 
-  const standardPrice = standardRooms.length
-    ? Math.min(...standardRooms.map((r) => Number(r.price_per_night)))
+  const selectedTypePrice = selectedTypeRooms.length
+    ? Number(selectedTypeRooms[0].price_per_night)
     : null;
-  const familyPrice = familyRooms.length
-    ? familyRooms.reduce((s, r) => s + Number(r.price_per_night), 0)
-    : null;
-  const familyNumbers = familyRooms.map((r) => r.room_number).join(" + ");
 
-  // Availability for chosen dates (uses public RPC — no auth needed)
   useEffect(() => {
     if (!checkIn || !checkOut || nights(checkIn, checkOut) <= 0) {
       setUnavailableIds(new Set());
@@ -127,8 +129,6 @@ function BookPage() {
   }, [checkIn, checkOut]);
 
   const n = nights(checkIn, checkOut);
-  const isFamily = type === "family_suite";
-  const familyUnavailable = isFamily && familyRooms.some((r) => unavailableIds.has(r.id));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,16 +136,9 @@ function BookPage() {
     if (!guestName.trim() || !guestPhone.trim()) {
       return toast.error("Please enter your name and phone.");
     }
-
-    let roomIds: string[] = [];
-    if (isFamily) {
-      if (familyRooms.length < 2) return toast.error("Family suite is not available right now.");
-      if (familyUnavailable) return toast.error("Family suite is already booked for those dates.");
-      roomIds = familyRooms.map((r) => r.id);
-    } else {
-      if (!selectedRoomId) return toast.error("Please pick a room.");
-      if (unavailableIds.has(selectedRoomId)) return toast.error("That room is no longer available for those dates.");
-      roomIds = [selectedRoomId];
+    if (!selectedRoomId) return toast.error("Please pick an available room.");
+    if (unavailableIds.has(selectedRoomId)) {
+      return toast.error("That room is no longer available for those dates.");
     }
 
     setSubmitting(true);
@@ -165,7 +158,7 @@ function BookPage() {
         _check_out: checkOut,
         _num_guests: numGuests,
         _notes: notes.trim() || null,
-        _room_ids: roomIds,
+        _room_ids: [selectedRoomId],
       });
 
       if (error) throw error;
@@ -186,108 +179,88 @@ function BookPage() {
   return (
     <SiteLayout>
       <section className="border-b border-border bg-secondary/40">
-        <div className="mx-auto max-w-4xl px-4 py-10">
+        <div className="mx-auto max-w-5xl px-4 py-10">
           <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
-            Book {isFamily ? "the Family Suite" : "a Standard Room"}
+            Book a {ROOM_LABELS[type]}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            No account required — just pick your dates and leave your phone number. Reception will confirm.
+            Choose your dates and an available room. No account is required.
           </p>
-          <div className="mt-3 flex gap-2 text-sm">
-            <Link
-              to="/book"
-              search={{ type: "standard" }}
-              className={`rounded-full border px-3 py-1 ${type === "standard" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground"}`}
-            >
-              Standard{standardPrice != null ? ` · RWF ${standardPrice.toLocaleString()}` : ""}
-            </Link>
-            <Link
-              to="/book"
-              search={{ type: "family_suite" }}
-              className={`rounded-full border px-3 py-1 ${isFamily ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground"}`}
-            >
-              Family Suite{familyPrice != null ? ` · RWF ${familyPrice.toLocaleString()}` : ""}
-            </Link>
+          <div className="mt-4 flex flex-wrap gap-2 text-sm">
+            {ROOM_TYPES.map((roomType) => {
+              const roomsOfType = rooms.filter((r) => r.room_type === roomType);
+              const price = roomsOfType.length ? Number(roomsOfType[0].price_per_night) : null;
+              return (
+                <Link
+                  key={roomType}
+                  to="/book"
+                  search={{ type: roomType }}
+                  className={`rounded-full border px-3 py-1 ${type === roomType ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground"}`}
+                >
+                  {ROOM_LABELS[roomType]}{price != null ? ` · RWF ${price.toLocaleString()}` : ""}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-4 py-10">
+      <section className="mx-auto max-w-5xl px-4 py-10">
         <form
           onSubmit={handleSubmit}
           className="grid gap-6 rounded-2xl border border-border bg-card p-6 shadow-sm md:grid-cols-2"
         >
           <div>
             <Label htmlFor="ci">Check-in</Label>
-            <Input
-              id="ci"
-              type="date"
-              min={today()}
-              value={checkIn}
-              onChange={(e) => setCheckIn(e.target.value)}
-              required
-            />
+            <Input id="ci" type="date" min={today()} value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required />
           </div>
           <div>
             <Label htmlFor="co">Check-out</Label>
-            <Input
-              id="co"
-              type="date"
-              min={checkIn}
-              value={checkOut}
-              onChange={(e) => setCheckOut(e.target.value)}
-              required
-            />
+            <Input id="co" type="date" min={checkIn} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required />
           </div>
 
-          {!isFamily && (
-            <div className="md:col-span-2">
-              <Label>Choose a room (for {n} night{n === 1 ? "" : "s"})</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {standardRooms.map((r) => {
-                  const taken = unavailableIds.has(r.id);
-                  const active = selectedRoomId === r.id;
-                  return (
-                    <button
-                      type="button"
-                      key={r.id}
-                      disabled={taken}
-                      onClick={() => setSelectedRoomId(r.id)}
-                      className={`rounded-lg border px-3 py-3 text-sm font-medium transition ${
-                        taken
-                          ? "cursor-not-allowed border-border bg-muted text-muted-foreground"
-                          : active
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background text-foreground hover:border-primary"
-                      }`}
-                    >
-                      <div>Room {r.room_number}</div>
-                      <div className={`mt-1 text-xs ${taken ? "" : active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        {taken ? "Booked" : "Available"}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {!standardRooms.length && (
-                <p className="mt-2 text-sm text-muted-foreground">No standard rooms found.</p>
-              )}
+          <div className="md:col-span-2">
+            <Label>Choose a room (for {n} night{n === 1 ? "" : "s"})</Label>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {selectedTypeRooms.map((r) => {
+                const taken = unavailableIds.has(r.id);
+                const active = selectedRoomId === r.id;
+                return (
+                  <button
+                    type="button"
+                    key={r.id}
+                    disabled={taken}
+                    onClick={() => setSelectedRoomId(r.id)}
+                    className={`rounded-lg border px-3 py-3 text-sm font-medium transition ${
+                      taken
+                        ? "cursor-not-allowed border-border bg-muted text-muted-foreground"
+                        : active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:border-primary"
+                    }`}
+                  >
+                    <div>{r.room_number}</div>
+                    <div className={`mt-1 text-xs ${taken ? "" : active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                      {taken ? "Booked" : "Available"}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          )}
+            {!selectedTypeRooms.length && (
+              <p className="mt-2 text-sm text-muted-foreground">No rooms in this category are currently active.</p>
+            )}
+          </div>
 
-          {isFamily && (
-            <div className="md:col-span-2 rounded-lg border border-border bg-muted/40 p-4 text-sm">
-              <p className="font-medium text-foreground">Family Suite (rooms {familyNumbers || "—"})</p>
-              <p className="mt-1 text-muted-foreground">
-                Both connected rooms are reserved together. Two beds, two private bathrooms.
-              </p>
-              {familyUnavailable && (
-                <p className="mt-2 text-sm text-destructive">
-                  Sorry — the Family Suite is taken for those dates.
-                </p>
-              )}
-            </div>
-          )}
+          <div className="md:col-span-2 rounded-lg border border-border bg-muted/40 p-4 text-sm">
+            <p className="font-medium text-foreground">
+              {selectedTypeRooms.length} {ROOM_LABELS[type]}{selectedTypeRooms.length === 1 ? "" : "s"}
+              {selectedTypePrice != null ? ` · RWF ${selectedTypePrice.toLocaleString()} per night` : ""}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Select one available room from this category. Availability is checked for your chosen dates.
+            </p>
+          </div>
 
           <div>
             <Label htmlFor="gn">Full name</Label>
@@ -307,9 +280,9 @@ function BookPage() {
               id="ng"
               type="number"
               min={1}
-              max={isFamily ? 6 : 2}
+              max={2}
               value={numGuests}
-              onChange={(e) => setNumGuests(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setNumGuests(Math.min(2, Math.max(1, Number(e.target.value))))}
               required
             />
           </div>
@@ -322,7 +295,7 @@ function BookPage() {
             <p className="text-sm text-muted-foreground">
               {n} night{n === 1 ? "" : "s"}
             </p>
-            <Button type="submit" size="lg" disabled={submitting || n <= 0}>
+            <Button type="submit" size="lg" disabled={submitting || n <= 0 || !selectedRoomId}>
               {submitting ? "Submitting..." : "Request booking"}
             </Button>
           </div>
