@@ -7,6 +7,10 @@ type ImageWithSkeletonProps = {
   className?: string;
   fallbackSrc?: string;
   aspectRatio?: string;
+  loading?: "lazy" | "eager";
+  fetchPriority?: "high" | "low" | "auto";
+  objectFit?: "cover" | "contain";
+  objectPosition?: string;
 };
 
 export function ImageWithSkeleton({
@@ -15,17 +19,19 @@ export function ImageWithSkeleton({
   className = "",
   fallbackSrc,
   aspectRatio,
+  loading = "lazy",
+  fetchPriority = "auto",
+  objectFit = "cover",
+  objectPosition = "center",
 }: ImageWithSkeletonProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Once the primary image errors, swap to the fallback source for a clean retry.
   const currentSrc = hasError && fallbackSrc ? fallbackSrc : src;
 
   const handleLoad = () => setIsLoaded(true);
 
   const handleError = () => {
-    // Nothing left to retry — show the neutral placeholder instead of looping.
     if (hasError || (fallbackSrc && src === fallbackSrc)) {
       setHasError(true);
       setIsLoaded(true);
@@ -54,13 +60,15 @@ export function ImageWithSkeleton({
         <img
           src={currentSrc}
           alt={alt}
-          loading="lazy"
+          loading={loading}
           decoding="async"
+          fetchPriority={fetchPriority}
           onLoad={handleLoad}
           onError={handleError}
-          className={`absolute inset-0 z-10 h-full w-full object-cover transition-opacity duration-500 ${
+          className={`absolute inset-0 z-10 h-full w-full object-${objectFit} transition-opacity duration-300 ${
             isLoaded ? "opacity-100" : "opacity-0"
           }`}
+          style={{ objectPosition }}
         />
       )}
     </div>
