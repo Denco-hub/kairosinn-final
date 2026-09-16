@@ -46,7 +46,7 @@ function ContactPage() {
             
             {/* Phone Channel */}
             <a
-              href="tel:+250793081660"
+              href="tel:+250791271095"
               className="group relative rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] p-6 transition-all duration-300 hover:border-[#af8f52] hover:shadow-md flex items-start gap-4"
             >
               <div className="p-2.5 border border-[#af8f52]/10 bg-[#faf6ee] group-hover:bg-[#af8f52]/10 transition-colors shrink-0">
@@ -55,14 +55,14 @@ function ContactPage() {
               <div>
                 <div className="font-serif text-sm font-semibold tracking-wider text-[#2c2520] uppercase">Voice Dispatch</div>
                 <div className="mt-1 font-serif text-base text-muted-foreground group-hover:text-[#af8f52] transition-colors">
-                  +250 793 081 660
+                  +250 791 271 095
                 </div>
               </div>
             </a>
 
             {/* WhatsApp Channel */}
             <a
-              href="https://wa.me/250793081660"
+              href="https://wa.me/250791271095"
               target="_blank"
               rel="noopener noreferrer"
               className="group relative rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] p-6 transition-all duration-300 hover:border-[#af8f52] hover:shadow-md flex items-start gap-4"
@@ -80,7 +80,7 @@ function ContactPage() {
 
             {/* Email Channel */}
             <a
-              href="mailto:hello@kairosinn.rw"
+              href="mailto:admin@kairosinn.com"
               className="group relative rounded-none border border-[#af8f52]/20 bg-[#fbf9f4] p-6 transition-all duration-300 hover:border-[#af8f52] hover:shadow-md flex items-start gap-4"
             >
               <div className="p-2.5 border border-[#af8f52]/10 bg-[#faf6ee] group-hover:bg-[#af8f52]/10 transition-colors shrink-0">
@@ -89,7 +89,7 @@ function ContactPage() {
               <div>
                 <div className="font-serif text-sm font-semibold tracking-wider text-[#2c2520] uppercase">Electronic Mail</div>
                 <div className="mt-1 font-serif text-base text-muted-foreground group-hover:text-[#af8f52] transition-colors break-all">
-                  hello@kairosinn.rw
+                  admin@kairosinn.com
                 </div>
               </div>
             </a>
