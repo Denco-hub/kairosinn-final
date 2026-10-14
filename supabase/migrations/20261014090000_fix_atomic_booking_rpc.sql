@@ -110,5 +110,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.create_booking_atomic(uuid, text, text, text, date, date, integer, text, uuid[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.create_booking_atomic(uuid, text, text, text, text, date, date, integer, text, uuid[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_booking_atomic(uuid, text, text, text, date, date, integer, text, uuid[]) TO anon, authenticated;
