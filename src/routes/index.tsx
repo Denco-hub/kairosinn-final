@@ -38,10 +38,10 @@ const amenities = [
 ];
 
 const roomPreview = [
-  { name: "King Bed Room", price: "RWF 20,000", count: "2 rooms", image: roomPhoto, alt: "King Bed Room at Kairos Inn" },
-  { name: "Large Double Room", price: "RWF 16,000", count: "6 rooms", image: roomPhoto, alt: "Large Double Room at Kairos Inn" },
-  { name: "Double Room", price: "RWF 13,000", count: "4 rooms", image: singleRoomPhoto, alt: "Double Room at Kairos Inn" },
-  { name: "Twin Bed Room", price: "RWF 10,000", count: "1 room", image: singleRoomPhoto, alt: "Twin Bed Room at Kairos Inn" },
+  { name: "King Bed Room", price: "RWF 20,000", image: roomPhoto, alt: "King Bed Room at Kairos Inn" },
+  { name: "Large Double Room", price: "RWF 16,000", image: roomPhoto, alt: "Large Double Room at Kairos Inn" },
+  { name: "Double Room", price: "RWF 13,000", image: singleRoomPhoto, alt: "Double Room at Kairos Inn" },
+  { name: "Twin Bed Room", price: "RWF 10,000", image: singleRoomPhoto, alt: "Twin Bed Room at Kairos Inn" },
 ];
 
 function HomePage() {
@@ -140,7 +140,6 @@ function HomePage() {
                   <div className="p-6 flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="font-serif text-2xl font-normal text-[#2c2520] mb-2">{room.name}</h3>
-                      <p className="text-[10px] font-bold tracking-[0.2em] text-[#af8f52] uppercase">{room.count}</p>
                     </div>
                   </div>
                 </div>
