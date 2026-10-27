@@ -90,7 +90,7 @@ function RoomsPage() {
               </h1>
               <div className="w-16 h-[1px] bg-[#af8f52] my-4 mx-auto md:mx-0" />
               <p className="max-w-2xl font-serif italic text-sm text-muted-foreground leading-relaxed">
-                Four room categories and 13 rooms in total, each provisioned with modern essentials, regional comfort, and a fresh morning breakfast.
+                Explore our room categories, compare nightly rates, and choose the right stay for your visit.
               </p>
             </div>
           </div>
@@ -134,9 +134,6 @@ function RoomsPage() {
                       <h2 className="font-serif text-2xl font-normal text-[#2c2520] mb-3">
                         {r.display_name}
                       </h2>
-                      <p className="text-[10px] font-bold tracking-[0.2em] text-[#af8f52] block mb-3 uppercase">
-                        {Number(r.available_count) || 0} room{Number(r.available_count) === 1 ? "" : "s"} in this category
-                      </p>
                       <p className="font-serif text-sm italic text-muted-foreground leading-relaxed mb-6">
                         {r.description || FALLBACK_BODY}
                       </p>
